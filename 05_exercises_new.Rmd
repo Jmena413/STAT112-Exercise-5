@@ -83,9 +83,60 @@ Once your repository is created, you should always open your **project** rather 
 
   1. Choose 2 graphs you have created for ANY assignment in this class and add interactivity using the `ggplotly()` function.
   
+```{r}
+penguins_depth_length <- penguins %>% 
+  ggplot(aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point() +
+  labs(title = 'Bill Depth (mm) vs Bill Length (mm)', x = 'Bill Depth (mm)', y = 'Bill Length (mm)')
+
+ggplotly(penguins_depth_length)
+```
+
+```{r}
+garden_harvest_lettuce <-
+  garden_harvest %>%
+  filter(vegetable == "lettuce")
+
+garden_harvest_lettuce_plot <- garden_harvest_lettuce %>%
+  ggplot(aes(x = weight)) +
+  geom_histogram() +
+  labs(x = "Harvest Weight (g)", y = "Number of lettuce harvests", title = "Weight distribution of lettuce harvests")
+
+garden_harvest_lettuce %>%
+  summarize(mean(weight), sd(weight))
+
+ggplotly(garden_harvest_lettuce_plot)
+```
+
 
   
   2. Use animation to tell an interesting story with the `small_trains` dataset that contains data from the SNCF (National Society of French Railways). These are Tidy Tuesday data! Read more about it [here](https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-02-26).
+
+```{r}
+#small_trains
+#small_trains_date <- small_trains
+
+#small_trains_date <- small_trains %>%
+ # mutate(month = month(month, label = TRUE))
+
+#small_trains_date <- small_trains_date %>%
+  #mutate(date = str_c(month, " " , year))
+
+#small_trains_date <- small_trains_date %>%
+ # lubridate::my(date)
+
+#small_trains_date %>%
+ # group_by(arrival_station, month) %>%
+  #summarize(monthly_total_trips =  sum(total_num_trips)) %>%
+  #mutate(cum_total_trips = cumsum(monthly_total_trips)) %>%
+  #ggplot() +
+  #geom_line(aes(x = date, y = cum_total_trips, color = arrival_station)) +
+  #theme(legend.position = "none")
+
+small_trains %>%
+  filter(arrival_station == "PARIS EST") %>%
+  
+```
 
 
 ## Garden data
@@ -101,10 +152,12 @@ garden_harvest %>%
   filter(vegetable == "tomatoes") %>% 
   group_by(date, variety) %>% 
   summarize(daily_harvest_lb = sum(weight)*0.00220462) %>% 
+  mutate(cum_harvest_lb = daily_harvest_lb) %>%
   ungroup() %>% 
   complete(variety, 
            date, 
-           fill = list(daily_harvest_lb = 0))
+           fill = list(daily_harvest_lb = 0)) %>%
+  mutate(cum_harvest_lb = fct_reorder(cum_harvest_lb, vegetable, +cum_harvest_lb))
   
 ```
 
@@ -155,6 +208,6 @@ Put the link to your app here:
 ## GitHub link
 
   8. Below, provide a link to your GitHub repo with this set of Weekly Exercises. 
-
+[Github](https://github.com/Jmena413/STAT112-Exercise-5)
 
 **DID YOU REMEMBER TO UNCOMMENT THE OPTIONS AT THE TOP?**
