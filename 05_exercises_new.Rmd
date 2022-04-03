@@ -56,7 +56,6 @@ panama_run <- read_csv("https://raw.githubusercontent.com/llendway/gps-data/mast
 
 #COVID-19 data from the New York Times
 covid19 <- read_csv("https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv")
-
 ```
 
 ## Put your homework on GitHub!
@@ -134,7 +133,7 @@ ggplotly(garden_harvest_lettuce_plot)
   #theme(legend.position = "none")
 
 small_trains %>%
-  filter(arrival_station == "PARIS EST") %>%
+  filter(arrival_station == "PARIS EST")
   
 ```
 
@@ -147,18 +146,33 @@ small_trains %>%
   * Use the data you just made to create a static cumulative harvest area plot, with the areas filled with different colors for each variety and arranged (HINT: `fct_reorder()`) from most to least harvested weights (most on the bottom).  
   * Add animation to reveal the plot over date. Instead of having a legend, place the variety names directly on the graph (refer back to the tutorial for how to do this).
 
-```{r}
+```{r, eval=FALSE}
 garden_harvest %>% 
   filter(vegetable == "tomatoes") %>% 
-  group_by(date, variety) %>% 
+  group_by(variety, date) %>% 
   summarize(daily_harvest_lb = sum(weight)*0.00220462) %>% 
-  mutate(cum_harvest_lb = daily_harvest_lb) %>%
-  ungroup() %>% 
+  ungroup() %>%
   complete(variety, 
            date, 
            fill = list(daily_harvest_lb = 0)) %>%
-  mutate(cum_harvest_lb = fct_reorder(cum_harvest_lb, vegetable, +cum_harvest_lb))
-  
+  group_by(variety) %>%
+  mutate(cum_harvest_lb = cumsum(daily_harvest_lb)) %>%
+  mutate(variety = fct_reorder(variety, cum_harvest_lb, .desc = TRUE))%>%
+  ggplot(aes(x = date, y = cum_harvest_lb, group = variety)) +
+  geom_area(aes(x = date, y = cum_harvest_lb, fill = variety)) +
+  geom_text(aes(label = variety, check_overlap = TRUE), position = "stack") +
+  theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  theme(legend.position = "none") +
+  transition_reveal(date)
+
+anim_save("tomatoes.gif")
+
+```
+```{r, echo=FALSE}
+knitr::include_graphics("tomatoes.gif")
 ```
 
 
@@ -173,12 +187,49 @@ garden_harvest %>%
   * Show the time in the subtitle.  
   * CHALLENGE: use the `ggimage` package and `geom_image` to add a bike image instead of a red point. You can use [this](https://raw.githubusercontent.com/llendway/animation_and_interactivity/master/bike.png) image. See [here](https://goodekat.github.io/presentations/2019-isugg-gganimate-spooky/slides.html#35) for an example. 
   * Add something of your own! And comment on if you prefer this to the static map and why or why not.
+```{r}
+saint_paul <- get_stamenmap(
+    bbox = c(left = 2.3092, bottom = 39.5144, right = 2.8482, top = 39.7550), 
+    maptype = "terrain",
+    zoom = 13)
+```
+
+```{r}
+ggmap(saint_paul) +
+  geom_point(data = mallorca_bike_day7, aes(x = lon, y = lat, color = ele)) +
+  transition_time(time) +
+  enter_recolor(color = "red") +
+  shadow_trail() +
+  labs(title = "Mallorca Bike Route colored by elevation",
+        subtitle = "Date and time: {frame_time}")
+```
+
   
   5. In this exercise, you get to meet Lisa's sister, Heather! She is a proud Mac grad, currently works as a Data Scientist where she uses R everyday, and for a few years (while still holding a full-time job) she was a pro triathlete. You are going to map one of her races. The data from each discipline of the Ironman 70.3 Pan Am championships, Panama is in a separate file - `panama_swim`, `panama_bike`, and `panama_run`. Create a similar map to the one you created with my cycling data. You will need to make some small changes: 1. combine the files putting them in swim, bike, run order (HINT: `bind_rows()`), 2. make the leading dot a different color depending on the event (for an extra challenge, make it a different image using `geom_image()!), 3. CHALLENGE (optional): color by speed, which you will need to compute on your own from the data. You can read Heather's race report [here](https://heatherlendway.com/2016/02/10/ironman-70-3-pan-american-championships-panama-race-report/). She is also in the Macalester Athletics [Hall of Fame](https://athletics.macalester.edu/honors/hall-of-fame/heather-lendway/184) and still has records at the pool. 
   
 ```{r}
-
+panama_combined <- bind_rows(panama_swim, panama_bike, panama_run)
 ```
+
+```{r}
+panama_map <- get_stamenmap(
+    bbox = c(left = -79.5789, bottom = 8.9106, right = -79.4441, top = 8.9878), 
+    maptype = "terrain",
+    zoom = 14)
+```
+
+```{r}
+ggmap(panama_map) +
+  geom_point(data = panama_combined, aes(x = lon, y = lat, group = event, color = event)) +
+  transition_time(time)+
+  enter_recolor(color = "white") +
+  exit_recolor(color = "white") +
+  shadow_mark() +
+  labs(title = "Panama Pan Am - Route",
+       subtitle = "Date and time: {frame_time}")
+```
+
+
   
 ## COVID-19 data
 
@@ -199,9 +250,39 @@ census_pop_est_2018 <- read_csv("https://www.dropbox.com/s/6txwv3b4ng7pepe/us_ce
 states_map <- map_data("state")
 ```
 
+
+```{r}
+
+covid19
+
+covid19_anim <- covid19 %>%
+  mutate(state = str_to_lower(state)) %>%
+  left_join(census_pop_est_2018, by = c("state")) %>% 
+  mutate(cases_per_10000 = (cases/est_pop_2018) * 10000) %>% 
+  mutate(date = ymd(date)) %>%
+  filter(day(date) == 15) %>%
+  group_by(date, state) %>%
+  arrange(desc(cases_per_10000)) %>%
+  ggplot() +
+  geom_map(map = states_map, aes(map_id = state, fill = cases_per_10000, group = date))  +
+  expand_limits(x = states_map$long, y = states_map$lat) + 
+  transition_time(date) +
+  labs(title = "Proportion of cumulative covid cases per 10000 people in each state",
+       subtitle = "Date: {frame_time}")
+
+animate(covid19_anim, nframes = 200, end_pause = 10)
+  
+```
+
+
+
 ## Your first `shiny` app (for next week!)
 
   7. This app will also use the COVID data. Make sure you load that data and all the libraries you need in the `app.R` file you create. You should create a new project for the app, separate from the homework project. Below, you will post a link to the app that you publish on shinyapps.io. You will create an app to compare states' daily number of COVID cases per 100,000 over time. The x-axis will be date. You will have an input box where the user can choose which states to compare (`selectInput()`), a slider where the user can choose the date range, and a submit button to click once the user has chosen all states they're interested in comparing. The graph should display a different line for each state, with labels either on the graph or in a legend. Color can be used if needed. 
+```{r}
+
+```
+  
   
 Put the link to your app here: 
   
