@@ -12,7 +12,7 @@ output:
 
 
 ```{r setup, include=FALSE}
-#knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r libraries}
@@ -112,30 +112,28 @@ ggplotly(garden_harvest_lettuce_plot)
   2. Use animation to tell an interesting story with the `small_trains` dataset that contains data from the SNCF (National Society of French Railways). These are Tidy Tuesday data! Read more about it [here](https://github.com/rfordatascience/tidytuesday/tree/master/data/2019/2019-02-26).
 
 ```{r}
-#small_trains
-#small_trains_date <- small_trains
+small_trains
+small_trains_date <- small_trains
+```
 
-#small_trains_date <- small_trains %>%
- # mutate(month = month(month, label = TRUE))
 
-#small_trains_date <- small_trains_date %>%
-  #mutate(date = str_c(month, " " , year))
 
-#small_trains_date <- small_trains_date %>%
- # lubridate::my(date)
 
-#small_trains_date %>%
- # group_by(arrival_station, month) %>%
-  #summarize(monthly_total_trips =  sum(total_num_trips)) %>%
-  #mutate(cum_total_trips = cumsum(monthly_total_trips)) %>%
-  #ggplot() +
-  #geom_line(aes(x = date, y = cum_total_trips, color = arrival_station)) +
-  #theme(legend.position = "none")
+```{r, eval=FALSE}
 
 small_trains %>%
-  filter(arrival_station == "PARIS EST")
-  
+  filter(arrival_station == "PARIS EST") %>%
+  ggplot() +
+  geom_point(aes(x = total_num_trips, y = journey_time_avg)) +
+  transition_time(month) +
+  labs(title = "Paris Est total number of trips versus average journey time", subtitle = "Month: {frame_time}", x = "Total number of trips", y = "Average journey time") +
+  anim_save("trains.gif")
 ```
+
+```{r, echo=FALSE}
+knitr::include_graphics("trains.gif")
+```
+
 
 
 ## Garden data
@@ -160,17 +158,16 @@ garden_harvest %>%
   mutate(variety = fct_reorder(variety, cum_harvest_lb, .desc = TRUE))%>%
   ggplot(aes(x = date, y = cum_harvest_lb, group = variety)) +
   geom_area(aes(x = date, y = cum_harvest_lb, fill = variety)) +
-  geom_text(aes(label = variety, check_overlap = TRUE), position = "stack") +
-  theme(axis.title.x = element_blank(), axis.title.y = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        panel.grid.minor.y = element_blank()) +
+  geom_text(aes(label = variety), position = "stack") +
+  theme(axis.title.x = element_blank(), axis.title.y = element_blank()) +
   theme(legend.position = "none") +
+  labs(title = "Cumulative garden harvest of tomatoes over time in lbs", subtitle = "Date: {frame_along}", x = "Date", y = "Cumulative harvest weight (lbs)") +
   transition_reveal(date)
 
 anim_save("tomatoes.gif")
 
 ```
+
 ```{r, echo=FALSE}
 knitr::include_graphics("tomatoes.gif")
 ```
@@ -271,20 +268,28 @@ covid19_anim <- covid19 %>%
        subtitle = "Date: {frame_time}")
 
 animate(covid19_anim, nframes = 200, end_pause = 10)
+
+anim_save("covid_map.gif")
   
 ```
+
+
+```{r, echo=FALSE}
+knitr::include_graphics("covid_map.gif")
+```
+
+The proportion of covid cases across the country seems to have increased at around the same rate with states like Oregon having a slightly lower rate throughout the dataset's covered time period.
+
+
 
 
 
 ## Your first `shiny` app (for next week!)
 
   7. This app will also use the COVID data. Make sure you load that data and all the libraries you need in the `app.R` file you create. You should create a new project for the app, separate from the homework project. Below, you will post a link to the app that you publish on shinyapps.io. You will create an app to compare states' daily number of COVID cases per 100,000 over time. The x-axis will be date. You will have an input box where the user can choose which states to compare (`selectInput()`), a slider where the user can choose the date range, and a submit button to click once the user has chosen all states they're interested in comparing. The graph should display a different line for each state, with labels either on the graph or in a legend. Color can be used if needed. 
-```{r}
-
-```
   
   
-Put the link to your app here: 
+Put the link to your app here: [App](https://jmena413.shinyapps.io/shiny_app/)
   
 ## GitHub link
 
